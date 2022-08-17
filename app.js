@@ -3,8 +3,12 @@ const {
     MongoClient
 } = require("mongodb");
 
-const dotenv=require('dotenv')
-dotenv.config({ path: './config.env' });
+const dotenv = require('dotenv')
+dotenv.config({
+    path: './config.env'
+});
+
+const bcrypt = require('bcryptjs')
 
 const app = express();
 app.use(
@@ -36,6 +40,7 @@ app.post("/signup", (req, res) => {
 
     async function run() {
         try {
+
             // Connect the client to the server (optional starting in v4.7)
             await client.connect();
             // Establish and verify connection
@@ -53,14 +58,14 @@ app.post("/signup", (req, res) => {
                 if (!await collection.findOne({
                         _id: newUser._id
                     })) {
-                    console.log('In id check')
-                    result = await collection.insertOne(newUser);
+                        newUser.password=bcrypt.hashSync(newUser.password, 10);
+                        result = await collection.insertOne(newUser);
+                        res.write('<h1>Successfully Registered.</h1>')
                 } else
                     throw 'User ID is already Taken'
             } else
                 throw 'Email is already registered'
         } catch (e) {
-            console.log(e);
             res.write('<h1>' + e + '</h1>')
         } finally {
             // Ensures that the client will close when you finish/error
@@ -70,6 +75,5 @@ app.post("/signup", (req, res) => {
     }
     run().catch(console.dir);
 });
-
 
 app.listen(2000, () => console.log("Server is listening at port 2000"));
