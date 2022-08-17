@@ -10,6 +10,8 @@ dotenv.config({
 
 const bcrypt = require('bcryptjs')
 
+const jwt = require('jsonwebtoken')
+
 const app = express();
 app.use(
     express.urlencoded({
@@ -58,9 +60,17 @@ app.post("/signup", (req, res) => {
                 if (!await collection.findOne({
                         _id: newUser._id
                     })) {
-                        newUser.password=bcrypt.hashSync(newUser.password, 10);
-                        result = await collection.insertOne(newUser);
-                        res.write('<h1>Successfully Registered.</h1>')
+                    const token = jwt.sign({id: newUser._id, ip:req.ip}, process.env.PRIVATE_KEY, {algorithm:process.env.ALGORITHM})
+                    const cookieOptions = {
+                        expires: new Date(
+                            Date.now() + process.env.EXPIRES_IN * 24 * 60 * 60 * 1000
+                        ),
+                        httpOnly: true
+                    };
+                    res.cookie('jwt', token, cookieOptions)
+                    newUser.password = bcrypt.hashSync(newUser.password, 10);
+                    result = await collection.insertOne(newUser);
+                    res.write('<h1>Successfully Registered.</h1>')
                 } else
                     throw 'User ID is already Taken'
             } else
